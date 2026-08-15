@@ -1,287 +1,113 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, push, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCfyAeiuw65_Pi3P0TDntFkqb7lgbPT7tM",
-  authDomain: "universal-3d40a.firebaseapp.com",
-  projectId: "universal-3d40a",
-  storageBucket: "universal-3d40a.firebasestorage.app",
-  messagingSenderId: "828271151150",
-  appId: "1:828271151150:web:d729fb8dcae3556d1077bf",
-  measurementId: "G-J8QZZHNSP7"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-let allReservations = {};
-let selectedTime = null;
-const timeSlotsConfig = [
-  "09:00", "09:30", "10:00", "10:30", 
-  "11:00", "11:30", "12:00", "12:30", 
-  "13:00", "13:30", "14:00", "14:30", 
-  "15:00", "15:30", "16:00", "16:30", 
-  "17:00", "17:30", "18:00"
-];
-
-const elBtnNavClient = document.getElementById('btn-nav-client');
-const elBtnNavAdmin = document.getElementById('btn-nav-admin');
-const elViewClient = document.getElementById('view-client');
-const elViewAdmin = document.getElementById('view-admin');
-const elFecha = document.getElementById('fecha');
-const elTimeSlots = document.getElementById('time-slots');
-const elBookingForm = document.getElementById('booking-form');
-const elBtnSubmit = document.getElementById('btn-submit');
-const elBtnText = elBtnSubmit.querySelector('.btn-text');
-const elSpinner = elBtnSubmit.querySelector('.spinner');
-const elAdminLogin = document.getElementById('admin-login');
-const elAdminDashboard = document.getElementById('admin-dashboard');
-const elAdminPin = document.getElementById('admin-pin');
-const elBtnLogin = document.getElementById('btn-login');
-const elFilterDate = document.getElementById('filter-date');
-const elFilterStatus = document.getElementById('filter-status');
-const elMetricTotal = document.getElementById('metric-total');
-const elMetricPending = document.getElementById('metric-pending');
-const elMetricRevenue = document.getElementById('metric-revenue');
-const elReservationsBody = document.getElementById('reservations-body');
-
-const todayDate = new Date().toISOString().split('T')[0];
-elFecha.min = todayDate;
-elFilterDate.value = todayDate;
-
-elBtnNavClient.addEventListener('click', () => switchView('client'));
-elBtnNavAdmin.addEventListener('click', () => switchView('admin'));
-
-function switchView(view) {
-  if (view === 'client') {
-    elViewClient.classList.add('active');
-    elViewAdmin.classList.remove('active');
-    elViewAdmin.classList.add('hide');
-    elViewClient.classList.remove('hide');
-    elBtnNavClient.classList.add('active');
-    elBtnNavAdmin.classList.remove('active');
-  } else {
-    elViewAdmin.classList.add('active');
-    elViewClient.classList.remove('active');
-    elViewClient.classList.add('hide');
-    elViewAdmin.classList.remove('hide');
-    elBtnNavAdmin.classList.add('active');
-    elBtnNavClient.classList.remove('active');
-  }
+export function formatCurrency(value) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+    }).format(value);
 }
 
-onValue(ref(db, 'reservas'), (snapshot) => {
-  allReservations = snapshot.val() || {};
-  if (elFecha.value) {
-    renderTimeSlots(elFecha.value);
-  }
-  renderAdminDashboard();
-});
+export function calculateTimeLeft(endTime, serverOffset) {
+    const now = Date.now() + serverOffset;
+    const diff = endTime - now;
+    if (diff <= 0) return { expired: true, text: "00:00:00", ms: 0 };
+    const h = Math.floor((diff / (1000 * 60 * 60)) % 24).toString().padStart(2, '0');
+    const m = Math.floor((diff / 1000 / 60) % 60).toString().padStart(2, '0');
+    const s = Math.floor((diff / 1000) % 60).toString().padStart(2, '0');
+    return { expired: false, text: `${h}:${m}:${s}`, ms: diff };
+}
 
-elFecha.addEventListener('change', (e) => {
-  selectedTime = null;
-  renderTimeSlots(e.target.value);
-});
+export function sanitize(str) {
+    const temp = document.createElement('div');
+    temp.textContent = str;
+    return temp.innerHTML;
+}
 
-function renderTimeSlots(dateSelected) {
-  elTimeSlots.innerHTML = '';
-  const bookedTimes = Object.values(allReservations)
-    .filter(r => r.fecha === dateSelected && r.estado !== 'cancelado')
-    .map(r => r.hora);
+export function generateId() {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
 
-  timeSlotsConfig.forEach(slot => {
-    const div = document.createElement('div');
-    div.className = 'time-slot';
-    div.textContent = slot;
+let audioCtx = null;
+let audioEnabled = true;
+
+export function toggleAudioState() {
+    audioEnabled = !audioEnabled;
+    return audioEnabled;
+}
+
+export function initAudio() {
+    if (!audioCtx && audioEnabled) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
+
+export function playTone(type) {
+    if (!audioEnabled) return;
+    if (!audioCtx) initAudio();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
     
-    if (bookedTimes.includes(slot)) {
-      div.classList.add('disabled');
-    } else {
-      div.addEventListener('click', () => {
-        document.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
-        div.classList.add('selected');
-        selectedTime = slot;
-      });
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    const now = audioCtx.currentTime;
+
+    if (type === 'bid') {
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(600, now);
+        oscillator.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+        gainNode.gain.setValueAtTime(0.3, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        oscillator.start(now);
+        oscillator.stop(now + 0.3);
+    } else if (type === 'outbid') {
+        oscillator.type = 'sawtooth';
+        oscillator.frequency.setValueAtTime(300, now);
+        oscillator.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+        gainNode.gain.setValueAtTime(0.4, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        oscillator.start(now);
+        oscillator.stop(now + 0.5);
+    } else if (type === 'win') {
+        oscillator.type = 'square';
+        oscillator.frequency.setValueAtTime(400, now);
+        oscillator.frequency.setValueAtTime(600, now + 0.1);
+        oscillator.frequency.setValueAtTime(800, now + 0.2);
+        gainNode.gain.setValueAtTime(0.3, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+        oscillator.start(now);
+        oscillator.stop(now + 0.6);
+    } else if (type === 'pause') {
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(200, now);
+        gainNode.gain.setValueAtTime(0.3, now);
+        gainNode.gain.linearRampToValueAtTime(0.01, now + 0.4);
+        oscillator.start(now);
+        oscillator.stop(now + 0.4);
+    }
+}
+
+export function triggerConfetti() {
+    const container = document.createElement('div');
+    container.classList.add('confetti-container');
+    document.body.appendChild(container);
+    
+    const colors = ['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6'];
+    
+    for (let i = 0; i < 150; i++) {
+        const particle = document.createElement('div');
+        particle.classList.add('confetti-particle');
+        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        particle.style.left = `${Math.random() * 100}vw`;
+        particle.style.transform = `scale(${Math.random() * 0.5 + 0.5})`;
+        particle.style.animationDuration = `${Math.random() * 2 + 2}s`;
+        particle.style.animationDelay = `${Math.random() * 0.5}s`;
+        container.appendChild(particle);
     }
     
-    if (selectedTime === slot && !bookedTimes.includes(slot)) {
-      div.classList.add('selected');
-    }
-    
-    elTimeSlots.appendChild(div);
-  });
-}
-
-elBookingForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
-  if (!selectedTime) {
-    showToast('Por favor, selecciona una hora para la cita.', 'error');
-    return;
-  }
-  
-  const servicioEl = document.getElementById('servicio');
-  const precio = parseFloat(servicioEl.options[servicioEl.selectedIndex].dataset.price);
-  
-  const bookingData = {
-    cliente: document.getElementById('nombre').value,
-    telefono: document.getElementById('telefono').value,
-    servicio: servicioEl.value,
-    precio: precio,
-    fecha: elFecha.value,
-    hora: selectedTime,
-    estado: "pendiente",
-    notas: document.getElementById('notas').value,
-    creadoEl: new Date().toISOString()
-  };
-
-  const isBooked = Object.values(allReservations).some(
-    r => r.fecha === bookingData.fecha && r.hora === bookingData.hora && r.estado !== 'cancelado'
-  );
-  
-  if (isBooked) {
-    showToast('El horario seleccionado acaba de ser reservado. Por favor elige otro.', 'error');
-    renderTimeSlots(elFecha.value);
-    return;
-  }
-
-  setLoading(true);
-  try {
-    const newResRef = push(ref(db, 'reservas'));
-    await set(newResRef, bookingData);
-    showToast('¡Reserva confirmada exitosamente!', 'success');
-    elBookingForm.reset();
-    selectedTime = null;
-    elTimeSlots.innerHTML = '';
-  } catch (error) {
-    showToast('Ocurrió un error al procesar tu reserva. Intenta de nuevo.', 'error');
-  } finally {
-    setLoading(false);
-  }
-});
-
-function setLoading(isLoading) {
-  if (isLoading) {
-    elBtnSubmit.disabled = true;
-    elBtnText.classList.add('hide');
-    elSpinner.classList.remove('hide');
-  } else {
-    elBtnSubmit.disabled = false;
-    elBtnText.classList.remove('hide');
-    elSpinner.classList.add('hide');
-  }
-}
-
-function showToast(message, type) {
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.textContent = message;
-  document.getElementById('toast-container').appendChild(toast);
-  setTimeout(() => {
-    toast.remove();
-  }, 4000);
-}
-
-elBtnLogin.addEventListener('click', () => {
-  if (elAdminPin.value === "1234") {
-    elAdminLogin.classList.add('hide');
-    elAdminDashboard.classList.remove('hide');
-    renderAdminDashboard();
-    elAdminPin.value = '';
-  } else {
-    showToast('PIN de acceso incorrecto', 'error');
-  }
-});
-
-elFilterDate.addEventListener('change', renderAdminDashboard);
-elFilterStatus.addEventListener('change', renderAdminDashboard);
-
-function renderAdminDashboard() {
-  if (elAdminDashboard.classList.contains('hide')) return;
-
-  const dateFilter = elFilterDate.value;
-  const statusFilter = elFilterStatus.value;
-  
-  let filteredList = Object.entries(allReservations).map(([id, data]) => ({ id, ...data }));
-
-  if (dateFilter) {
-    filteredList = filteredList.filter(r => r.fecha === dateFilter);
-  }
-  
-  if (statusFilter !== 'todas') {
-    filteredList = filteredList.filter(r => r.estado === statusFilter);
-  }
-
-  filteredList.sort((a, b) => a.hora.localeCompare(b.hora));
-
-  elReservationsBody.innerHTML = '';
-  let totalCitas = 0;
-  let pendientes = 0;
-  let ganancia = 0;
-
-  filteredList.forEach(r => {
-    if (r.estado !== 'cancelado') {
-      totalCitas++;
-      if (r.estado === 'pendiente') pendientes++;
-      ganancia += parseFloat(r.precio || 0);
-    }
-
-    const tr = document.createElement('tr');
-    
-    let btnsHTML = '';
-    if (r.estado === 'pendiente') {
-      btnsHTML = `
-        <button class="btn-action btn-atender" data-id="${r.id}">Atender</button>
-        <button class="btn-action btn-cancelar" data-id="${r.id}">Cancelar</button>
-      `;
-    }
-    btnsHTML += `<button class="btn-action btn-eliminar" data-id="${r.id}">Eliminar</button>`;
-
-    tr.innerHTML = `
-      <td><strong>${r.cliente}</strong><br><small>${r.notas || 'Sin notas'}</small></td>
-      <td>${r.telefono}</td>
-      <td>${r.servicio} ($${r.precio})</td>
-      <td>${r.fecha}<br>${r.hora}</td>
-      <td><span class="status-badge status-${r.estado}">${r.estado}</span></td>
-      <td class="action-btns">${btnsHTML}</td>
-    `;
-    
-    elReservationsBody.appendChild(tr);
-  });
-
-  elMetricTotal.textContent = totalCitas;
-  elMetricPending.textContent = pendientes;
-  elMetricRevenue.textContent = `$${ganancia.toFixed(2)}`;
-
-  document.querySelectorAll('.btn-atender').forEach(btn => {
-    btn.addEventListener('click', (e) => updateReservationStatus(e.target.dataset.id, 'atendido'));
-  });
-  
-  document.querySelectorAll('.btn-cancelar').forEach(btn => {
-    btn.addEventListener('click', (e) => updateReservationStatus(e.target.dataset.id, 'cancelado'));
-  });
-  
-  document.querySelectorAll('.btn-eliminar').forEach(btn => {
-    btn.addEventListener('click', (e) => deleteReservation(e.target.dataset.id));
-  });
-}
-
-async function updateReservationStatus(id, newStatus) {
-  try {
-    await update(ref(db, `reservas/${id}`), { estado: newStatus });
-    showToast(`La reserva ha sido marcada como ${newStatus}.`, 'success');
-  } catch (error) {
-    showToast('Error de conexión al actualizar el estado.', 'error');
-  }
-}
-
-async function deleteReservation(id) {
-  if (confirm('¿Estás absolutamente seguro de que deseas eliminar este registro de la base de datos? Esta acción es irreversible.')) {
-    try {
-      await remove(ref(db, `reservas/${id}`));
-      showToast('Registro de reserva eliminado correctamente.', 'success');
-    } catch (error) {
-      showToast('Error de conexión al intentar eliminar el registro.', 'error');
-    }
-  }
+    setTimeout(() => {
+        if (document.body.contains(container)) {
+            document.body.removeChild(container);
+        }
+    }, 5000);
 }

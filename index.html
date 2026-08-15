@@ -1,121 +1,85 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reservas y Gestión de Turnos</title>
-  <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuctionHub Live - Subastas en Tiempo Real</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="components.css">
 </head>
 <body>
-  <nav class="navbar glass">
-    <div class="logo">BarberApp SaaS</div>
-    <div class="nav-links">
-      <button id="btn-nav-client" class="active">Agendar Cita</button>
-      <button id="btn-nav-admin">Panel Admin</button>
+    <div id="offline-banner" class="offline-banner hidden">
+        <span>Conexión perdida. Intentando reconectar...</span>
     </div>
-  </nav>
 
-  <main id="app-container">
-    <section id="view-client" class="view active">
-      <div class="glass card form-container">
-        <h1>Agenda tu cita</h1>
-        <form id="booking-form">
-          <div class="form-group">
-            <label for="servicio">Servicio a realizar</label>
-            <select id="servicio" required>
-              <option value="" disabled selected>Selecciona un servicio</option>
-              <option value="Corte Clásico" data-price="15">Corte Clásico - $15 (30 min)</option>
-              <option value="Barba Completa" data-price="10">Barba Completa - $10 (30 min)</option>
-              <option value="Combo VIP" data-price="20">Combo VIP - $20 (1 hora)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="fecha">Fecha de reserva</label>
-            <input type="date" id="fecha" required>
-          </div>
-          <div class="form-group">
-            <label>Horarios Disponibles</label>
-            <div id="time-slots" class="time-grid"></div>
-          </div>
-          <div class="form-group">
-            <label for="nombre">Nombre Completo</label>
-            <input type="text" id="nombre" required placeholder="Ej. Juan Pérez">
-          </div>
-          <div class="form-group">
-            <label for="telefono">Número de Teléfono</label>
-            <input type="tel" id="telefono" required placeholder="Ej. +1 234 567 890">
-          </div>
-          <div class="form-group">
-            <label for="notas">Notas Adicionales (Opcional)</label>
-            <textarea id="notas" rows="3" placeholder="Detalles o requerimientos especiales..."></textarea>
-          </div>
-          <button type="submit" id="btn-submit" class="btn-primary">
-            <span class="btn-text">Confirmar Reserva</span>
-            <div class="spinner hide"></div>
-          </button>
-        </form>
-      </div>
-    </section>
-
-    <section id="view-admin" class="view hide">
-      <div id="admin-login" class="glass card admin-login">
-        <h2>Acceso Administrativo</h2>
-        <p>Por favor, ingresa el PIN de seguridad para continuar.</p>
-        <input type="password" id="admin-pin" placeholder="****" maxlength="4">
-        <button id="btn-login" class="btn-primary">Ingresar al Sistema</button>
-      </div>
-
-      <div id="admin-dashboard" class="hide">
-        <div class="dashboard-header">
-          <h2>Panel de Control en Vivo</h2>
-          <div class="filters glass">
-            <input type="date" id="filter-date">
-            <select id="filter-status">
-              <option value="todas">Todas las citas</option>
-              <option value="pendiente">Solo Pendientes</option>
-              <option value="atendido">Solo Atendidas</option>
-              <option value="cancelado">Canceladas</option>
-            </select>
-          </div>
+    <header class="navbar">
+        <div class="brand">
+            <h1>AuctionHub <span>Live</span></h1>
         </div>
-        
-        <div class="metrics-grid">
-          <div class="metric-card glass">
-            <h3>Total Citas del Día</h3>
-            <p id="metric-total">0</p>
-          </div>
-          <div class="metric-card glass">
-            <h3>Citas Pendientes</h3>
-            <p id="metric-pending">0</p>
-          </div>
-          <div class="metric-card glass">
-            <h3>Ganancia Estimada</h3>
-            <p id="metric-revenue">$0</p>
-          </div>
+        <div class="nav-controls">
+            <span class="active-users"><span id="users-count">0</span> en línea</span>
+            <span class="clock" id="global-clock">00:00:00</span>
+            <button id="toggle-audio" class="btn-icon">🔊</button>
+            <button id="toggle-theme" class="btn-icon">🌓</button>
+            <div id="connection-status" class="status-indicator disconnected"></div>
         </div>
+    </header>
 
-        <div class="table-container glass">
-          <table id="reservations-table">
-            <thead>
-              <tr>
-                <th>Cliente</th>
-                <th>Contacto</th>
-                <th>Servicio</th>
-                <th>Fecha y Hora</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="reservations-body">
-            </tbody>
-          </table>
+    <main class="container layout-main">
+        <section class="hero">
+            <h2>Subastas Exclusivas. Tiempo Real.</h2>
+            <div class="filters">
+                <input type="text" id="search-input" placeholder="Buscar por nombre o descripción...">
+                <select id="category-filter">
+                    <option value="all">Todas las categorías</option>
+                    <option value="arte">Arte</option>
+                    <option value="tecnologia">Tecnología</option>
+                    <option value="vehiculos">Vehículos</option>
+                </select>
+                <select id="status-filter">
+                    <option value="all">Todos los estados</option>
+                    <option value="active">Activas</option>
+                    <option value="paused">Pausadas</option>
+                    <option value="closed">Finalizadas</option>
+                </select>
+            </div>
+        </section>
+
+        <div class="grid-layout">
+            <section class="products-section">
+                <div id="products-container" class="products-grid"></div>
+            </section>
+            
+            <aside class="live-feed">
+                <h3>Historial en Vivo</h3>
+                <div id="bids-feed-container" class="feed-container"></div>
+            </aside>
         </div>
-      </div>
-    </section>
-  </main>
+    </main>
 
-  <div id="toast-container"></div>
-  <script type="module" src="app.js"></script>
+    <div id="bid-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3 id="modal-product-title">Producto</h3>
+            <p>Precio actual: <strong id="modal-current-price">$0</strong></p>
+            <form id="bid-form">
+                <input type="hidden" id="modal-product-id">
+                <input type="text" id="bidder-alias" placeholder="Tu Alias" required autocomplete="off">
+                <input type="number" id="bid-amount" placeholder="Monto de la puja" required step="any">
+                <button type="submit" class="btn btn-primary full-width">Confirmar Puja</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script type="module" src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js');
+            });
+        }
+    </script>
 </body>
 </html>

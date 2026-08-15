@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control - AuctionHub Live</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="components.css">
+</head>
+<body>
+    <header class="navbar admin-navbar">
+        <div class="brand">
+            <h1>AuctionHub <span>Admin</span></h1>
+        </div>
+        <div class="nav-controls">
+            <span class="active-users"><span id="admin-users-count">0</span> en línea</span>
+            <button id="toggle-theme-admin" class="btn-icon">🌓</button>
+            <a href="index.html" class="btn btn-outline">Ir a la Tienda</a>
+        </div>
+    </header>
+
+    <main class="container admin-layout">
+        <section class="dashboard-kpis">
+            <div class="kpi-card">
+                <h3>Total Pujas</h3>
+                <p id="kpi-total-bids">0</p>
+            </div>
+            <div class="kpi-card">
+                <h3>Volumen Total</h3>
+                <p id="kpi-volume">$0</p>
+            </div>
+            <div class="kpi-card">
+                <h3>Subastas Activas</h3>
+                <p id="kpi-active">0</p>
+            </div>
+            <div class="kpi-card">
+                <h3>Incidencias</h3>
+                <p id="kpi-incidents">0</p>
+            </div>
+        </section>
+
+        <section class="admin-controls">
+            <div class="panel form-panel">
+                <h2>Crear Nueva Subasta</h2>
+                <form id="create-product-form">
+                    <input type="text" id="prod-title" placeholder="Título del producto" required>
+                    <textarea id="prod-desc" placeholder="Descripción" required></textarea>
+                    <div class="form-row">
+                        <select id="prod-category" required>
+                            <option value="arte">Arte</option>
+                            <option value="tecnologia">Tecnología</option>
+                            <option value="vehiculos">Vehículos</option>
+                        </select>
+                        <input type="url" id="prod-image" placeholder="URL de la Imagen" required>
+                    </div>
+                    <div class="form-row">
+                        <input type="number" id="prod-price" placeholder="Precio Inicial" required min="1">
+                        <input type="number" id="prod-increment" placeholder="Incremento Mínimo" required min="1">
+                        <input type="number" id="prod-duration" placeholder="Duración (Minutos)" required min="1">
+                    </div>
+                    <button type="submit" class="btn btn-primary full-width">Publicar Subasta</button>
+                </form>
+            </div>
+
+            <div class="panel actions-panel">
+                <h2>Control de Mando Global</h2>
+                <div class="global-actions">
+                    <button id="btn-pause-all" class="btn btn-warning">Pausar Todo</button>
+                    <button id="btn-resume-all" class="btn btn-success">Reanudar Todo</button>
+                    <button id="btn-close-all" class="btn btn-danger">Finalizar Todo</button>
+                </div>
+                
+                <h2 class="mt-20">Auditoría y Reportes</h2>
+                <button id="btn-export-csv" class="btn btn-outline full-width">Exportar Registro CSV</button>
+            </div>
+        </section>
+
+        <section class="panel table-panel">
+            <h2>Registro de Actividad en Tiempo Real</h2>
+            <div class="table-responsive">
+                <table id="audit-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha y Hora</th>
+                            <th>Usuario</th>
+                            <th>Producto ID</th>
+                            <th>Monto</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-tbody"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script type="module" src="admin.js"></script>
+</body>
+</html>
